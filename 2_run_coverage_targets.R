@@ -16,7 +16,6 @@ library(lubridate)
 #############################################################################
 
 source("R/functions.R")
-source("R/scheduling_function.R")
 
 #############################################################################
 # Income group
@@ -41,7 +40,7 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 5, 1)
+target_group_stop <- c(11, 7, 3, 1)
 
 # Efficacy
 efficacy_infection <- 0.63
@@ -52,7 +51,8 @@ rel_infectiousness_vaccinated <- 0.55
 target_pop <- 50e6
 
 # Max coverage of targeting strategy
-max_coverage <- c(0, 0.8)
+# note that the max_coverage values for WHO strategy are hardcoded in the functions
+max_coverage <- c(0, 1)
 
 # Scenario table
 scenarios <- expand_grid(income_group = income_group,
@@ -83,6 +83,6 @@ out_format <- format_out_all(out, scenarios)
 ################################################################################
 
 ### Save output ################################################################
-saveRDS(out, "output/2_coverage_targets.rds")
+saveRDS(out, "output/2_coverage_targets_raw.rds")
 saveRDS(out_format, "output/2_coverage_targets.rds")
 ################################################################################

@@ -40,7 +40,7 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 5, 1)
+target_group_stop <- c(11, 7, 3, 1)
 
 # Efficacy
 efficacy_infection <- c(0.63, 0.4)
@@ -51,7 +51,8 @@ rel_infectiousness_vaccinated <- c(0.55, 0.67)
 target_pop <- 50e6
 
 # Max coverage of targeting strategy
-max_coverage <- c(0, 0.8)
+# note that the max_coverage values for WHO strategy are hardcoded in the functions
+max_coverage <- c(0, 1)
 
 # Scenario table
 scenarios <- expand_grid(income_group = income_group,

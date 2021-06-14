@@ -75,6 +75,7 @@ run_vaccine_income_setting <- function(
   seeding_cases = 60,
   max_coverage = 0.8,
   risk_proportion = 0,
+  rel_infect_u10 = 1,
   rel_infectiousness_vaccinated = 0.55,
   use_DDE = TRUE,
   atol = 0.001,
@@ -85,6 +86,7 @@ run_vaccine_income_setting <- function(
 ){
   
   rel_infectiousness_vaccinated <- rep(rel_infectiousness_vaccinated, 17)
+  rel_infectiousness <- c(rep(rel_infect_u10,2), rep(1,15))
   
   # Convert dates to date format
   date_start <- as.Date(date_start)
@@ -116,7 +118,11 @@ run_vaccine_income_setting <- function(
   eff_dis <- rep(scaling_eff_dis, 17)
 
   # vaccinate everyone over a period of 4 months
-  target_pop_vacc <- round(prop_older_than(pop, target_group_stop) * max_coverage * target_pop)
+  ind <- 17 - target_group_stop + 1
+  vacc_vect <- c(rep(0, 17 - ind), rep(1, ind)) * max_coverage # vector of which groups to target
+  mc <- c(rep(0.7, 13), rep(0.85, 4)) # hard-code in WHO takeup
+  
+  target_pop_vacc <- sum(pop * vacc_vect * mc)
   vacc_per_day <- round(target_pop_vacc / vacc_period)
   
   # get timing of vaccine start, changes, and end
@@ -130,15 +136,21 @@ run_vaccine_income_setting <- function(
   
   # create the prioritisation matrix
   # First X% is always "Elderly". then continue (strategy_switch == FALSE), or option to switch to a uniform all ages strategy (strategy_switch == TRUE)
+  
+  # note that max_coverage values for WHO framework are hardcoded in here
+  m0 <- strategy_matrix("Elderly", max_coverage = 0.85)
+  m0_sub <- strategy_matrix("Elderly", max_coverage = 0.7)[5:17,1:13]
+  m0[5:17, 1:13] <- m0_sub
+  
   if (strategy_switch == FALSE){
     if (vacc_children == FALSE) {
-      m1 <- strategy_matrix("Elderly", max_coverage = max_coverage)[1:14,]
-    } else {m1 <- strategy_matrix("Elderly", max_coverage = max_coverage)[1:16,]}
+      m1 <- m0[1:14,]
+    } else {m1 <- m0}
   } else if (strategy_switch == TRUE){
     ind <- (17 - target_group_switch + 1)
-    m1 <- strategy_matrix("Elderly", max_coverage = max_coverage)[1:ind,]
-    m2 <- strategy_matrix("All", max_coverage = max_coverage)
-    if (vacc_children == FALSE) {m2[1,1:3] <- 0} else {m2[1,1] <- 0}
+    m1 <- m0[1:ind,]
+    m2 <- m0[17,]
+    if (vacc_children == FALSE) {m2[1,1:3] <- 0}
     m1 <- rbind(m1, m2)
   }
 
@@ -182,6 +194,7 @@ run_vaccine_income_setting <- function(
     max_vaccine = max_vaccine,
     tt_vaccine = tt_vaccine,
     vaccine_coverage_mat = m1,
+    rel_infectiousness = rel_infectiousness,
     rel_infectiousness_vaccinated = rel_infectiousness_vaccinated,
     atol = 1e-5,
     rtol = 1e-5,
