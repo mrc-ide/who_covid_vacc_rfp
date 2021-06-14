@@ -108,7 +108,7 @@ g5 <- ggplot() +
 
 g5
 
-ggsave("plots/fig5_trajectories.png", plot = g5, height = 8, width = 8)
+ggsave("plots/fig5_trajectories.png", plot = g5, height = 6, width = 10)
 
 # figure 2b: bar plots
 dat5b <- dat %>%
@@ -137,69 +137,4 @@ g5b <- ggplot(data = filter(dat5b, Event == "Deaths"), aes(x = `Age.target`, y =
         axis.line = element_line())
 
 g5b
-ggsave("plots/fig5b.png", plot = g5b, height = 8, width = 6)
-
-g2c <- ggplot(data = dat2b , aes(x = `Age.target`, y = (value / target_pop * 1e6), alpha = Period, fill = `Age.target`)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(`Income group` ~ Event, nrow = 4, labeller = label_both, scales = "free") +
-  labs(x = "Age coverage target (years)", y = "Events averted per million total population", fill = "Age coverage \ntarget (years)") +
-  scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  geom_blank(aes(y = yax_max / target_pop * 1e6)) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
-  theme_bw() +
-  theme(strip.background = element_rect(fill = NA, color = "white"),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        #axis.text.x=element_text(angle=60, hjust = 1)
-  )
-
-g2c
-ggsave("plots/fig2c.png", plot = g2c, height = 8, width = 10)
-
-# deaths averted by age group
-dat2d <- dat %>%
-  select(output_age, `Income group`, target_pop, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, strategy, Age.target) %>%
-  unnest(cols = output_age) %>%
-  filter(compartment %in% c("deaths", "infections"),
-         Rt1 == 1.2) %>%
-  pivot_wider(names_from = strategy, values_from = value) %>%
-  left_join(age_group_key_2) %>%
-  mutate(events_averted = None - Vaccine) %>%
-  group_by(compartment, period, `Income group`, target_pop, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, age_group_10y, Age.target) %>%
-  summarise(None = sum(None),
-            Vaccine = sum(Vaccine),
-            events_averted = sum(events_averted)) %>%
-  mutate(Period = factor(period, levels = c("phase2", "phase1"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)")))
-
-g2d <- ggplot(data = filter(dat2d, compartment == "deaths"), aes(x = factor(age_group_10y), y = events_averted / target_pop * 1e6, alpha = period, fill = `Age.target`)) +
-  geom_bar(stat = "identity") +
-  facet_grid(`Income group` ~ `Age.target`, labeller = label_both) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
-  scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  theme_bw() +
-  theme(strip.background = element_rect(fill = NA, color = "white"),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        axis.text.x=element_text(angle=60, hjust = 1)
-  ) +
-  labs(x = "Age group in which events averted", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)")
-
-g2d
-ggsave("plots/fig2d.png", plot = g2d, height = 8, width = 10)
-
-# infections averted by age group
-g2e <- ggplot(data = filter(dat2d, compartment == "infections"), aes(x = factor(age_group_10y), y = events_averted / target_pop * 1e6, alpha = period, fill = `Age.target`)) +
-  geom_bar(stat = "identity") +
-  facet_grid(`Income group` ~ `Age.target`, labeller = label_both) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
-  scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  theme_bw() +
-  theme(strip.background = element_rect(fill = NA, color = "white"),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        axis.text.x=element_text(angle=60, hjust = 1)
-  ) +
-  labs(x = "Age group in which events averted", y = "Infections averted per million total population", fill = "Age coverage \ntarget (years)")
-
-g2e
-ggsave("plots/fig2e.png", plot = g2e, height = 8, width = 10)
+ggsave("plots/fig5b.png", plot = g5b, height = 6, width = 10)

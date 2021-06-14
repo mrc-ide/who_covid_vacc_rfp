@@ -74,7 +74,6 @@ scenarios <- expand_grid(income_group = income_group,
                          rel_infectiousness_vaccinated = rel_infectiousness_vaccinated) %>%
   filter((efficacy_infection == 0.63 & scaling_eff_dis == 0.46 & rel_infectiousness_vaccinated == 0.55) | (efficacy_infection == 0.4 & scaling_eff_dis == 0.5 & rel_infectiousness_vaccinated == 0.67))
 
-
 nrow(scenarios)
 
 #### Run the model #############################################################
