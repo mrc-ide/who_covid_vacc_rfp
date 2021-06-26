@@ -19,7 +19,7 @@ source("R/functions.R")
 
 #############################################################################
 # Income group
-income_group <- c("HIC", "UMIC", "LMIC", "LIC")
+income_group <- "LMIC"#c("HIC", "UMIC", "LMIC", "LIC")
 
 # transmission
 date_start <- "2020-03-01"
@@ -28,7 +28,7 @@ Rt2_start <- "2021-07-01"
 Rt2_end <- "2021-12-31"
 R0 <- 2.5
 Rt1 <- 1.2
-Rt2 <- c(3.5, 4.5) #c(2.5, 3.5, 4.5)
+Rt2 <- 3.5
 
 # Vaccine start date
 vaccine_start_date <- "2021-03-01"
@@ -40,19 +40,21 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 5, 3, 1)
+target_group_stop <- c(11,5)#c(11, 7, 5, 3, 1)
 
 # Efficacy
-efficacy_infection <- c(0.63, 0.4)
-scaling_eff_dis <- c(0.73, 0.83)
-rel_infectiousness_vaccinated <- c(0.55, 0.67)
+efficacy_infection <- 0.63
+scaling_eff_dis <- 0.73
+rel_infectiousness_vaccinated <- 0.55
 
 # Pop size
 target_pop <- 50e6
 
 # Max coverage of targeting strategy
 # note that the max_coverage values for WHO strategy are hardcoded in the functions
-max_coverage <- c(0, 1)
+max_coverage <- c(0, 1) # either zero or 1 to represent without/with vaccine
+takeup_over_65 <- seq(0.5, 0.95, 0.05)
+takeup_under_65 <- seq(0.4, 0.95, 0.05)
 
 # Scenario table
 scenarios <- expand_grid(income_group = income_group,
@@ -71,9 +73,10 @@ scenarios <- expand_grid(income_group = income_group,
                          efficacy_infection = efficacy_infection,
                          scaling_eff_dis = scaling_eff_dis,
                          max_coverage = max_coverage,                       
-                         rel_infectiousness_vaccinated = rel_infectiousness_vaccinated) %>%
-  filter((efficacy_infection == 0.63 & scaling_eff_dis == 0.46 & rel_infectiousness_vaccinated == 0.55) | (efficacy_infection == 0.4 & scaling_eff_dis == 0.67 & rel_infectiousness_vaccinated == 0.67) | (efficacy_infection == 0.63 & scaling_eff_dis == 0.73 & rel_infectiousness_vaccinated == 0.55) | (efficacy_infection == 0.4 & scaling_eff_dis == 0.83 & rel_infectiousness_vaccinated == 0.67))
-
+                         rel_infectiousness_vaccinated = rel_infectiousness_vaccinated,
+                         takeup_over_65 = takeup_over_65,
+                         takeup_under_65 = takeup_under_65) %>%
+  filter(takeup_over_65 >= takeup_under_65)
 nrow(scenarios)
 
 #### Run the model #############################################################
@@ -85,6 +88,6 @@ out_format <- format_out_all(out, scenarios)
 ################################################################################
 
 ### Save output ################################################################
-saveRDS(out, "output/4_voc_matrix_raw.rds")
-saveRDS(out_format, "output/4_voc_matrix.rds")
+saveRDS(out, "output/6_takeup_raw.rds")
+saveRDS(out_format, "output/6_takeup.rds")
 ################################################################################

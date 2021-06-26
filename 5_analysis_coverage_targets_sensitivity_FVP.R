@@ -104,10 +104,10 @@ dat5b <- dat %>%
   mutate(Period = factor(Period, levels = c("Period 2 (2022-23)", "Period 1 (2021-22)"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)")))
 
 
-g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
+g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = value / vaccine_n_phase1 * 100, alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
   facet_wrap(~ Scenario, labeller = label_both) +
-  labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)") +
+  labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
   scale_fill_manual(values = c(col1, col2, col3, col4)) +
   theme_bw() +
@@ -116,7 +116,7 @@ g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), a
         axis.line = element_line())
 
 g5b
-ggsave("plots/fig5b.png", plot = g5b, height = 6, width = 7)
+ggsave("plots/fig5b_FVP.png", plot = g5b, height = 6, width = 7)
 
 ##################################
 # results across all income settings

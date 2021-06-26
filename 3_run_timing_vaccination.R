@@ -40,11 +40,11 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 3, 1)
+target_group_stop <- c(11, 7, 5, 3, 1)
 
 # Efficacy
 efficacy_infection <- 0.63
-scaling_eff_dis <- 0.46
+scaling_eff_dis <- 0.73
 rel_infectiousness_vaccinated <- 0.55
 
 # Natural immunity

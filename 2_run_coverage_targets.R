@@ -20,6 +20,7 @@ source("R/functions.R")
 #############################################################################
 # Income group
 income_group <- c("HIC", "UMIC", "LMIC", "LIC")
+hs_constraints <- c("Present", "Absent")
 
 # transmission
 date_start <- "2020-03-01"
@@ -40,11 +41,11 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 3, 1)
+target_group_stop <- c(11, 7,5, 3, 1)
 
 # Efficacy
 efficacy_infection <- 0.63
-scaling_eff_dis <- 0.46
+scaling_eff_dis <- c(0.46, 0.73)
 rel_infectiousness_vaccinated <- 0.55
 
 # Pop size
@@ -71,7 +72,8 @@ scenarios <- expand_grid(income_group = income_group,
                          efficacy_infection = efficacy_infection,
                          scaling_eff_dis = scaling_eff_dis,
                          max_coverage = max_coverage,                       
-                         rel_infectiousness_vaccinated = rel_infectiousness_vaccinated)
+                         rel_infectiousness_vaccinated = rel_infectiousness_vaccinated,
+                         hs_constraints = hs_constraints)
 nrow(scenarios)
 
 #### Run the model #############################################################

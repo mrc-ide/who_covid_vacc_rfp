@@ -77,6 +77,8 @@ run_vaccine_income_setting <- function(
   risk_proportion = 0,
   rel_infect_u10 = 1,
   rel_infectiousness_vaccinated = 0.55,
+  takeup_over_65 = 0.85,
+  takeup_under_65 = 0.7,
   use_DDE = TRUE,
   atol = 0.001,
   rtol = 0.001,
@@ -120,7 +122,7 @@ run_vaccine_income_setting <- function(
   # vaccinate everyone over a period of 4 months
   ind <- 17 - target_group_stop + 1
   vacc_vect <- c(rep(0, 17 - ind), rep(1, ind)) * max_coverage # vector of which groups to target
-  mc <- c(rep(0.7, 13), rep(0.85, 4)) # hard-code in WHO takeup
+  mc <- c(rep(takeup_under_65, 13), rep(takeup_over_65, 4)) # hard-code in WHO takeup
   
   target_pop_vacc <- sum(pop * vacc_vect * mc)
   vacc_per_day <- round(target_pop_vacc / vacc_period)
@@ -138,8 +140,8 @@ run_vaccine_income_setting <- function(
   # First X% is always "Elderly". then continue (strategy_switch == FALSE), or option to switch to a uniform all ages strategy (strategy_switch == TRUE)
   
   # note that max_coverage values for WHO framework are hardcoded in here
-  m0 <- strategy_matrix("Elderly", max_coverage = 0.85)
-  m0_sub <- strategy_matrix("Elderly", max_coverage = 0.7)[5:17,1:13]
+  m0 <- strategy_matrix("Elderly", max_coverage = takeup_over_65)
+  m0_sub <- strategy_matrix("Elderly", max_coverage = takeup_under_65)[5:17,1:13]
   m0[5:17, 1:13] <- m0_sub
   
   if (strategy_switch == FALSE){

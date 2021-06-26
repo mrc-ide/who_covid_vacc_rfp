@@ -1,8 +1,21 @@
+
+### Load packages ##############################################################
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(purrr)
+library(tidyr)
+
+source("R/plotting_specifics.R")
+
+################################################################################
+
 dat <- readRDS("output/3_timing_vaccination.rds") %>%
   mutate(`Income group` = factor(income_group, levels = c("HIC", "UMIC", "LMIC", "LIC")))
 
 pd3 <- dat %>%
   select(R0, Rt1, Rt2, max_coverage, `Income group`, output, date_start, target_pop, vaccine_start_date, target_group_stop, duration_R) %>%
+  filter(max_coverage != 0) %>%
   unnest(cols = output) %>%
   mutate(date = as.Date(date_start) + t) %>%
   filter(compartment == "deaths",
@@ -11,13 +24,11 @@ pd3 <- dat %>%
 
 pd3a <- dat %>%
   select(R0, Rt1, Rt2, max_coverage, `Income group`, date_start, target_pop, vaccine_start_date, target_group_stop, duration_R, deaths_averted_phase1) %>%
-  filter(max_coverage != 0) %>%
   left_join(age_group_key) %>%
   mutate(`Age.target` = factor(`Age.target`, levels = rev(a)))
 
 pd3b <- pd3 %>%
   filter(date <= "2022-06-30",
-        max_coverage != 0,
         target_group_stop == 7)
 
 scalefact <- 2000
@@ -28,7 +39,7 @@ g3a <- ggplot() +
   scale_y_continuous("Deaths averted per million total population", 
     sec.axis = sec_axis(~ . / scalefact, name = "Deaths per million per day (counterfactual)")) +
   facet_wrap( ~`Age.target`, ncol = 1) +
-scale_fill_manual(values = c(col1, col2, col3, col4)) +
+scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   scale_x_continuous(labels = seq(0,486,100), breaks = seq(18687,(18687+487-1),100)) +
   labs(x = "Time (days)", fill = "Age coverage \ntarget (years)") +
   theme_bw() +
@@ -38,7 +49,7 @@ scale_fill_manual(values = c(col1, col2, col3, col4)) +
   
 g3a
 
-ggsave("plots/fig3a_timing.png", plot = g3a, height = 8, width = 6)
+ggsave("plots/fig3a_timing_VEdis90.png", plot = g3a, height = 10, width = 6)
 
 g3b <- ggplot(data = filter(pd3b, t >= 600), aes(x = t, y = value / target_pop * 1e6, col = factor(vaccine_start_date))) +
   geom_line() +

@@ -9,27 +9,7 @@ library(patchwork)
 library(purrr)
 library(tidyr)
 
-################################################################################
-# Plotting specifics
-# Age bands
-x1 <- seq(0,80,5)
-y1 <- seq(4,84,5)
-y2 <- seq(5, 85, 5)
-z1 <- paste0(x1,"-",y1)
-z2 <- paste0(x1, "-", y2)
-z1[17] <- "80+"
-z2[17] <- "80+"
-a <- paste0(seq(0, 80, 5), "+")
-age_group_key <- data.frame(target_group_stop = 1:17, `Age target` = a)
-
-age_group_10y <- c("0-10", "0-10", "10-20", "10-20","20-30", "20-30", "30-40", "30-40","40-50","40-50", "50-60","50-60", "60-70", "60-70", "70-80", "70-80", "80+")
-
-age_group_key_2 <- data.frame(age_group = z2, age_group_10y = age_group_10y)
-
-col1 <- "#6dc1db"
-col2 <- "#d8b9a9"
-col3 <- "#e5546c"
-col4 <- "#c00000"
+source("R/plotting_specifics.R")
 
 ################################################################################
 
@@ -37,27 +17,29 @@ dat <- readRDS("output/2_coverage_targets.rds") %>%
   mutate(`Income group` = factor(income_group, levels = c("HIC", "UMIC", "LMIC", "LIC"))) %>%
   mutate(strategy = if_else(max_coverage == 0, "None", "Vaccine")) %>%
   left_join(age_group_key) %>%
-  mutate(`Age.target` = factor(`Age.target`, levels = rev(a)))
+  mutate(`Age.target` = factor(`Age.target`, levels = rev(a))) %>%
+  mutate(`VE disease` = if_else(scaling_eff_dis %in% c(0.46, 0.67), "80%", "90%"))
 
 # figure 1a: trajectories
 dat2 <- dat %>%
   unnest(cols = output) %>%
   filter(compartment == "deaths",
-         Rt1 == 1.2) %>%
+         Rt1 == 1.2,
+         hs_constraints == "Present") %>%
   mutate(date = as.Date(date_start) + t) %>%
   filter(date >= as.Date(vaccine_start_date), date <= as.Date("2023-06-30")) %>%
   mutate(t = t - as.numeric(as.Date(vaccine_start_date) - as.Date(date_start)) + 1)
 
 g2 <- ggplot() +
-  geom_line(data = filter(dat2, strategy == "None"),
+  geom_line(data = filter(dat2, strategy == "None", `VE disease` == "90%"),
             aes(x = t, y = value / target_pop * 1e6, linetype = strategy), col = "black") +
-  geom_line(data = filter(dat2, date > as.Date("2021-01-01"), strategy != "None"), aes(x = t, y = value / target_pop * 1e6, col = `Age.target`, linetype = strategy)) +
+  geom_line(data = filter(dat2, date > as.Date("2021-01-01"), strategy != "None", `VE disease` == "90%"), aes(x = t, y = value / target_pop * 1e6, col = `Age.target`, linetype = strategy)) +
   geom_vline(xintercept = 0, linetype = "dotted") +
   geom_vline(xintercept = 122, linetype = "dotted") +
   scale_linetype_manual(values = c("dashed", "solid")) +
   geom_vline(xintercept = 122+365, linetype = "dotted") +
   geom_vline(xintercept = 122+365*2, linetype = "dotted") +
-  scale_color_manual(values = c(col1, col2, col3, col4)) +
+  scale_color_manual(values = c(col1, col2, col2b, col3, col4)) +
   facet_wrap( ~ `Income group`, labeller = label_both, ncol = 1) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
@@ -73,99 +55,163 @@ g2 <- ggplot() +
 
 g2
 
-ggsave("plots/fig2.png", plot = g2, height = 8, width = 8)
+ggsave("plots/fig2_VEdis90.png", plot = g2, height = 8, width = 7)
 
 # figure 2b: bar plots
 dat2b <- dat %>%
   filter(max_coverage != 0,
-         Rt1 == 1.2) %>%
+         Rt1 == 1.2,
+         hs_constraints == "Present") %>%
   pivot_longer(c("deaths_averted_phase1", "hospitalisations_averted_phase1", "infections_averted_phase1", "deaths_averted_phase2", "hospitalisations_averted_phase2", "infections_averted_phase2"), names_to = "Event", values_to = "value") %>%
   mutate(name = Event) %>%
   mutate(Event = if_else(Event %in% c("deaths_averted_phase1", "deaths_averted_phase2"), "Deaths", Event),
          Event = if_else(Event %in% c("hospitalisations_averted_phase1", "hospitalisations_averted_phase2"), "Hospitalisations", Event),
          Event = if_else(Event %in% c("infections_averted_phase1", "infections_averted_phase2"), "Infections", Event)) %>%
   mutate(Period = if_else(name %in% c("infections_averted_phase1", "deaths_averted_phase1", "hospitalisations_averted_phase1"), "Period 1 (2021-22)", "Period 2 (2022-23)")) %>%
-  mutate(Period = factor(Period, levels = c("Period 2 (2022-23)", "Period 1 (2021-22)"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)"))) %>%
+  mutate(Period = factor(Period, levels = c("Period 2 (2022-23)", "Period 1 (2021-22)"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)")))
+
+dat2b_permill <- dat2b %>%
   group_by(Event, Age.target, income_group) %>%
   mutate(yax = sum(value)) %>%
   group_by(Event) %>%
   mutate(yax_max = max(yax))
 
-g2b <- ggplot(data = filter(dat2b, Event == "Deaths"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
+dat2b_perFVP <- dat2b %>%
+group_by(Event, Age.target, income_group) %>%
+  mutate(yax = sum(value)/vaccine_n_phase1*100) %>%
+  group_by(Event) %>%
+  mutate(yax_max = max(yax))
+
+g2b <- ggplot(data = filter(dat2b_permill, Event == "Deaths", `VE disease` == "90%"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
+  geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
   facet_wrap(~ `Income group`, nrow = 4, labeller = label_both) +
   labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
         axis.line = element_line())
 
 g2b
-ggsave("plots/fig2b.png", plot = g2b, height = 8, width = 6)
+ggsave("plots/fig2b_VEdis90.png", plot = g2b, height = 8, width = 4)
 
-g2c <- ggplot(data = dat2b , aes(x = `Age.target`, y = (value / target_pop * 1e6), alpha = Period, fill = `Age.target`)) +
+g2c <- ggplot(data = filter(dat2b_permill, `VE disease` == "90%" ), aes(x = `Age.target`, y = (value / target_pop * 1e6), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
   facet_wrap(`Income group` ~ Event, nrow = 4, labeller = label_both, scales = "free") +
   labs(x = "Age coverage target (years)", y = "Events averted per million total population", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
   geom_blank(aes(y = yax_max / target_pop * 1e6)) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
-        axis.line = element_line(),
-        #axis.text.x=element_text(angle=60, hjust = 1)
-  )
+        axis.line = element_line())
 
 g2c
-ggsave("plots/fig2c.png", plot = g2c, height = 8, width = 10)
+ggsave("plots/fig2c_VEdis90.png", plot = g2c, height = 8, width = 10)
 
-# deaths averted by age group
+# events averted by age group
+
 dat2d <- dat %>%
-  select(output_age, `Income group`, target_pop, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, strategy, Age.target) %>%
+  select(output_age, `Income group`, target_pop, `VE disease`, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, strategy, Age.target, hs_constraints) %>%
   unnest(cols = output_age) %>%
-  filter(compartment %in% c("deaths", "infections"),
+  filter(compartment %in% c("deaths", "infections", "hospitalisations"),
          Rt1 == 1.2) %>%
   pivot_wider(names_from = strategy, values_from = value) %>%
   left_join(age_group_key_2) %>%
   mutate(events_averted = None - Vaccine) %>%
-  group_by(compartment, period, `Income group`, target_pop, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, age_group_10y, Age.target) %>%
+  group_by(compartment, period, `Income group`, target_pop, `VE disease`, date_start, R0, Rt1, Rt2, Rt1_start, Rt2_start, Rt2_end, vaccine_start_date, target_group_stop, vacc_children, strategy_switch, efficacy_infection, scaling_eff_dis, rel_infectiousness_vaccinated, age_group_10y, Age.target, hs_constraints) %>%
   summarise(None = sum(None),
             Vaccine = sum(Vaccine),
             events_averted = sum(events_averted)) %>%
   mutate(Period = factor(period, levels = c("phase2", "phase1"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)")))
 
-g2d <- ggplot(data = filter(dat2d, compartment == "deaths"), aes(x = factor(age_group_10y), y = events_averted / target_pop * 1e6, alpha = period, fill = `Age.target`)) +
-  geom_bar(stat = "identity") +
-  facet_grid(`Income group` ~ `Age.target`, labeller = label_both) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
-  scale_alpha_discrete("Period", range = c(0.25, 1)) +
+###########################
+# plot deaths with and without vaccine, in age groups they occur
+dat2e <- dat2d %>%
+  pivot_longer(c(None, Vaccine)) %>%
+  filter((Age.target != "0+" & period == "phase1" & name == "Vaccine") | (Age.target == "0+" & period == "phase2" & name == "Vaccine"& name == "Vaccine") | (Age.target == "50+" & period == "phase1" & name == "None"))
+
+event <- "deaths"
+gs <- ggplot(data = filter(dat2e, compartment == event, `VE disease` == "90%"),
+       aes(x = factor(age_group_10y), y = value / target_pop * 1e6, fill = `Age.target`, alpha = name)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_grid(hs_constraints~ `Income group`, labeller = label_both) +
+  scale_alpha_discrete("Scenario", range = c(0.25, 1)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
         axis.line = element_line(),
         axis.text.x=element_text(angle=60, hjust = 1)
   ) +
-  labs(x = "Age group in which events averted", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)")
+  labs(x = "Age group in which events averted", y = paste0(event, " per million total population"), fill = "Age coverage \ntarget (years)")
 
-g2d
-ggsave("plots/fig2d.png", plot = g2d, height = 8, width = 10)
+ggsave("plots/fig2g_VEdis90.png", plot = gs, height = 10, width = 13)
+###########################
 
-# infections averted by age group
-g2e <- ggplot(data = filter(dat2d, compartment == "infections"), aes(x = factor(age_group_10y), y = events_averted / target_pop * 1e6, alpha = period, fill = `Age.target`)) +
+
+plot_events_avert_age <- function(event, VEdis){
+  plot_out <- ggplot(data = filter(dat2d, compartment == event, `VE disease` == VEdis, hs_constraints == "Present"), aes(x = factor(age_group_10y), y = events_averted / target_pop * 1e6, alpha = period, fill = `Age.target`)) +
+    geom_bar(stat = "identity") +
+    facet_grid(`Income group` ~ `Age.target`, labeller = label_both) +
+    scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+    scale_alpha_discrete("Period", range = c(0.25, 1)) +
+    theme_bw() +
+    theme(strip.background = element_rect(fill = NA, color = "white"),
+          panel.border = element_blank(),
+          axis.line = element_line(),
+          axis.text.x=element_text(angle=60, hjust = 1)
+    ) +
+    labs(x = "Age group in which events averted", y = paste0(event, " averted per million total population"), fill = "Age coverage \ntarget (years)")
+  return(plot_out)
+}
+
+#g2d80 <- plot_events_avert_age("deaths", "80%")
+#ggsave("plots/fig2d_VEdis80.png", plot = g2d80, height = 8, width = 10)
+g2d90 <- plot_events_avert_age("deaths", "90%")
+ggsave("plots/fig2d_VEdis90.png", plot = g2d90, height = 8, width = 10)
+#g2e80 <- plot_events_avert_age("infections", "80%")
+#ggsave("plots/fig2d_VEdis80.png", plot = g2e80, height = 8, width = 10)
+g2e90 <- plot_events_avert_age("infections", "90%")
+ggsave("plots/fig2d_VEdis90.png", plot = g2e90, height = 8, width = 10)
+#g2f80 <- plot_events_avert_age("hospitalisations", "80%")
+#ggsave("plots/fig2f_VEdis80.png", plot = g2f80, height = 8, width = 10)
+g2f90 <- plot_events_avert_age("hospitalisations", "90%")
+ggsave("plots/fig2f_VEdis90.png", plot = g2f90, height = 8, width = 10)
+
+######################################################################
+# per FVP plots
+
+g2b_FVP <- ggplot(data = filter(dat2b_perFVP, Event == "Deaths", `VE disease` == "90%"), aes(x = `Age.target`, y = (value / vaccine_n_phase1 * 100), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
-  facet_grid(`Income group` ~ `Age.target`, labeller = label_both) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
+  geom_text(aes(label=(round(value / vaccine_n_phase1 * 100,1))), stat = "identity", position = position_stack(vjust = 0.5)) +
+  facet_wrap(~ `Income group`, nrow = 4, labeller = label_both) +
+  labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
-        axis.line = element_line(),
-        axis.text.x=element_text(angle=60, hjust = 1)
-  ) +
-  labs(x = "Age group in which events averted", y = "Infections averted per million total population", fill = "Age coverage \ntarget (years)")
+        axis.line = element_line())
 
-g2e
-ggsave("plots/fig2e.png", plot = g2e, height = 8, width = 10)
+g2b_FVP
+ggsave("plots/fig2b_FVP_VEdis90.png", plot = g2b_FVP, height = 8, width = 4)
+
+g2c_FVP <- ggplot(data = filter(dat2b_perFVP, `VE disease` == "90%"), aes(x = `Age.target`, y = (value / vaccine_n_phase1 * 100), alpha = Period, fill = `Age.target`)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(`Income group` ~ Event, nrow = 4, labeller = label_both, scales = "free") +
+  labs(x = "Age coverage target (years)", y = "Events averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
+  scale_alpha_discrete("Period", range = c(0.25, 1)) +
+  geom_blank(aes(y = yax_max)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = NA, color = "white"),
+        panel.border = element_blank(),
+        axis.line = element_line())
+
+g2c_FVP
+ggsave("plots/fig2c_FVP_VEdis90.png", plot = g2c_FVP, height = 8, width = 10)
+
