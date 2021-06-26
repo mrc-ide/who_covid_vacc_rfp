@@ -15,7 +15,6 @@ dat <- readRDS("output/3_timing_vaccination.rds") %>%
 
 pd3 <- dat %>%
   select(R0, Rt1, Rt2, max_coverage, `Income group`, output, date_start, target_pop, vaccine_start_date, target_group_stop, duration_R) %>%
-  filter(max_coverage != 0) %>%
   unnest(cols = output) %>%
   mutate(date = as.Date(date_start) + t) %>%
   filter(compartment == "deaths",
@@ -24,10 +23,12 @@ pd3 <- dat %>%
 
 pd3a <- dat %>%
   select(R0, Rt1, Rt2, max_coverage, `Income group`, date_start, target_pop, vaccine_start_date, target_group_stop, duration_R, deaths_averted_phase1) %>%
+  filter(max_coverage != 0) %>%
   left_join(age_group_key) %>%
   mutate(`Age.target` = factor(`Age.target`, levels = rev(a)))
 
 pd3b <- pd3 %>%
+  filter(max_coverage != 0) %>%
   filter(date <= "2022-06-30",
         target_group_stop == 7)
 

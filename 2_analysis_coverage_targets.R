@@ -71,15 +71,15 @@ dat2b <- dat %>%
   mutate(Period = factor(Period, levels = c("Period 2 (2022-23)", "Period 1 (2021-22)"), labels = c("Period 2 (2022-23)", "Period 1 (2021-22)")))
 
 dat2b_permill <- dat2b %>%
-  group_by(Event, Age.target, income_group) %>%
+  group_by(Event, Age.target, income_group, `VE disease`) %>%
   mutate(yax = sum(value)) %>%
-  group_by(Event) %>%
+  group_by(Event, `VE disease`) %>%
   mutate(yax_max = max(yax))
 
 dat2b_perFVP <- dat2b %>%
-group_by(Event, Age.target, income_group) %>%
+group_by(Event, Age.target, income_group, `VE disease`) %>%
   mutate(yax = sum(value)/vaccine_n_phase1*100) %>%
-  group_by(Event) %>%
+  group_by(Event, `VE disease`) %>%
   mutate(yax_max = max(yax))
 
 g2b <- ggplot(data = filter(dat2b_permill, Event == "Deaths", `VE disease` == "90%"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
@@ -95,7 +95,7 @@ g2b <- ggplot(data = filter(dat2b_permill, Event == "Deaths", `VE disease` == "9
         axis.line = element_line())
 
 g2b
-ggsave("plots/fig2b_VEdis90.png", plot = g2b, height = 8, width = 4)
+ggsave("plots/fig2b_VEdis90.png", plot = g2b, height = 8, width = 5)
 
 g2c <- ggplot(data = filter(dat2b_permill, `VE disease` == "90%" ), aes(x = `Age.target`, y = (value / target_pop * 1e6), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
@@ -134,7 +134,7 @@ dat2e <- dat2d %>%
   pivot_longer(c(None, Vaccine)) %>%
   filter((Age.target != "0+" & period == "phase1" & name == "Vaccine") | (Age.target == "0+" & period == "phase2" & name == "Vaccine"& name == "Vaccine") | (Age.target == "50+" & period == "phase1" & name == "None"))
 
-event <- "deaths"
+event <- "infections"
 gs <- ggplot(data = filter(dat2e, compartment == event, `VE disease` == "90%"),
        aes(x = factor(age_group_10y), y = value / target_pop * 1e6, fill = `Age.target`, alpha = name)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -149,7 +149,7 @@ gs <- ggplot(data = filter(dat2e, compartment == event, `VE disease` == "90%"),
   ) +
   labs(x = "Age group in which events averted", y = paste0(event, " per million total population"), fill = "Age coverage \ntarget (years)")
 
-ggsave("plots/fig2g_VEdis90.png", plot = gs, height = 10, width = 13)
+ggsave("plots/fig2g_VEdis90_infections.png", plot = gs, height = 10, width = 13)
 ###########################
 
 
@@ -176,7 +176,7 @@ ggsave("plots/fig2d_VEdis90.png", plot = g2d90, height = 8, width = 10)
 #g2e80 <- plot_events_avert_age("infections", "80%")
 #ggsave("plots/fig2d_VEdis80.png", plot = g2e80, height = 8, width = 10)
 g2e90 <- plot_events_avert_age("infections", "90%")
-ggsave("plots/fig2d_VEdis90.png", plot = g2e90, height = 8, width = 10)
+ggsave("plots/fig2e_VEdis90.png", plot = g2e90, height = 8, width = 10)
 #g2f80 <- plot_events_avert_age("hospitalisations", "80%")
 #ggsave("plots/fig2f_VEdis80.png", plot = g2f80, height = 8, width = 10)
 g2f90 <- plot_events_avert_age("hospitalisations", "90%")
@@ -198,7 +198,7 @@ g2b_FVP <- ggplot(data = filter(dat2b_perFVP, Event == "Deaths", `VE disease` ==
         axis.line = element_line())
 
 g2b_FVP
-ggsave("plots/fig2b_FVP_VEdis90.png", plot = g2b_FVP, height = 8, width = 4)
+ggsave("plots/fig2b_FVP_VEdis90.png", plot = g2b_FVP, height = 8, width = 5)
 
 g2c_FVP <- ggplot(data = filter(dat2b_perFVP, `VE disease` == "90%"), aes(x = `Age.target`, y = (value / vaccine_n_phase1 * 100), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
