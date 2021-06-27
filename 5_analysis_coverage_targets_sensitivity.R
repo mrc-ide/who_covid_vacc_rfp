@@ -22,7 +22,7 @@ dat <- readRDS("output/5_coverage_targets_sensitivity.rds") %>%
 dat_sub1 <- dat %>%
   filter(rel_infect_u10 == 1,
          efficacy_infection == 0.63,
-         scaling_eff_dis == 0.46,
+         scaling_eff_dis == 0.73,
          rel_infectiousness_vaccinated == 0.55,
          hs_constraints == "Present") %>%
   mutate(Scenario = "Default")
@@ -30,7 +30,7 @@ dat_sub1 <- dat %>%
 dat_sub2 <- dat %>%
   filter(rel_infect_u10 == 1,
          efficacy_infection == 0.63,
-         scaling_eff_dis == 0.46,
+         scaling_eff_dis == 0.73,
          rel_infectiousness_vaccinated == 0.55,
          hs_constraints == "Absent") %>%
   mutate(Scenario = "HS_Unconstrained")
@@ -38,7 +38,7 @@ dat_sub2 <- dat %>%
 dat_sub3 <- dat %>%
   filter(rel_infect_u10 == 0.5,
          efficacy_infection == 0.63,
-         scaling_eff_dis == 0.46,
+         scaling_eff_dis == 0.73,
          rel_infectiousness_vaccinated == 0.55,
          hs_constraints == "Present") %>%
   mutate(Scenario = "Reduced_Inf_U10")
@@ -46,8 +46,8 @@ dat_sub3 <- dat %>%
 dat_sub4 <- dat %>%
   filter(rel_infect_u10 == 1,
          efficacy_infection == 0,
-         scaling_eff_dis == 0.8,
-         rel_infectiousness_vaccinated == 0.67,
+         scaling_eff_dis == 0.9,
+         rel_infectiousness_vaccinated == 0.55,
          hs_constraints == "Present") %>%
   mutate(Scenario = "Disease_Blocking_Only")
 
@@ -72,7 +72,7 @@ g5 <- ggplot() +
   scale_linetype_manual(values = c("dashed", "solid")) +
   geom_vline(xintercept = 122+365, linetype = "dotted") +
   geom_vline(xintercept = 122+365*2, linetype = "dotted") +
-  scale_color_manual(values = c(col1, col2, col3, col4)) +
+  scale_color_manual(values = c(col1, col2, col2b, col3, col4)) +
   facet_wrap( ~ Scenario, labeller = label_both) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
@@ -109,7 +109,7 @@ g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), a
   facet_wrap(~ Scenario, labeller = label_both) +
   labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  scale_fill_manual(values = c(col1, col2, col3, col4)) +
+  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
@@ -133,7 +133,7 @@ plot_func_sensitivity <- function(x){
     labs(x = "Age coverage target (years)", y = "Events averted per million total population", fill = "Age coverage \ntarget (years)") +
     scale_alpha_discrete("Period", range = c(0.25, 1)) +
     geom_blank(aes(y = yax_max / target_pop * 1e6)) +
-    scale_fill_manual(values = c(col1, col2, col3, col4)) +
+    scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
     theme_bw() +
     theme(strip.background = element_rect(fill = NA, color = "white"),
           panel.border = element_blank(),
@@ -143,15 +143,20 @@ plot_func_sensitivity <- function(x){
   return(g5c)
 }
 
+icg_list <- c("HIC", "UMIC", "LMIC", "LIC")
+for (i in 1:4){
+  icg <- icg_list[i]
+  
+  g5c_disease_blocking <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Disease_Blocking_Only"), income_group == icg))
+  
+  ggsave(paste0("plots/fig5c_disease_blocking_", icg, ".png"), plot = g5c_disease_blocking, height = 7, width = 8)
+  
+  g5c_hs_unconst <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "HS_Unconstrained"), income_group == icg))
+  
+  ggsave(paste0("plots/fig5c_hs_unconstrained_", icg, ".png"), plot = g5c_hs_unconst, height = 7, width = 8)
+  
+  g5c_Reduced_Inf_U10 <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Reduced_Inf_U10"), income_group == icg))
+  
+  ggsave(paste0("plots/fig5c_Reduced_Inf_U10_", icg, ".png"), plot = g5c_Reduced_Inf_U10, height = 7, width = 8)
+}
 
-g5c_disease_blocking <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Disease_Blocking_Only"), income_group %in% c("LMIC")))
-
-ggsave("plots/fig5c_disease_blocking.png", plot = g5c_disease_blocking, height = 7, width = 7)
-
-g5c_hs_unconst <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "HS_Unconstrained"), income_group %in% c("LMIC")))
-
-ggsave("plots/fig5c_hs_unconstrained.png", plot = g5c_hs_unconst, height = 7, width = 7)
-
-g5c_Reduced_Inf_U10 <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Reduced_Inf_U10"), income_group %in% c("LMIC")))
-
-ggsave("plots/fig5c_Reduced_Inf_U10.png", plot = g5c_Reduced_Inf_U10, height = 7, width = 7)
