@@ -41,11 +41,18 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7,5, 3, 1)
+target_group_stop <- c(11, 5, 3, 1) # note that stop group 3 actually represents 12+ instead of 10+ - manual adjustment made in the functions script
+
+takeup_over_65 <- 0.85
+takeup_under_65 <- 0.7
+takeup_under5_HIC <- 0.87
+takeup_under5_UMIC <- 0.81
+takeup_under5_LMIC <- 0.77
+takeup_under5_LIC <- 0.7
 
 # Efficacy
 efficacy_infection <- 0.63
-scaling_eff_dis <- c(0.46, 0.73)
+scaling_eff_dis <- 0.73
 rel_infectiousness_vaccinated <- 0.55
 
 # Pop size
@@ -67,6 +74,12 @@ scenarios <- expand_grid(income_group = income_group,
                          Rt2_end = Rt2_end,
                          vaccine_start_date = vaccine_start_date,
                          target_group_stop = target_group_stop,
+                         takeup_over_65 = takeup_over_65,
+                         takeup_under_65 = takeup_under_65,
+                         takeup_under5_HIC = takeup_under5_HIC,
+                         takeup_under5_UMIC = takeup_under5_UMIC,
+                         takeup_under5_LMIC = takeup_under5_LMIC,
+                         takeup_under5_LIC = takeup_under5_LIC,
                          vacc_children = vacc_children,
                          strategy_switch = strategy_switch,
                          efficacy_infection = efficacy_infection,
@@ -81,7 +94,7 @@ plan(multiprocess, workers = 6)
 system.time({out <- future_pmap(scenarios, run_vaccine_income_setting, .progress = TRUE, .options = furrr_options(seed = NULL))})
 
 #### Format output #############################################################
-out_format <- format_out_all(out, scenarios)
+out_format <- format_out(out, scenarios)
 ################################################################################
 
 ### Save output ################################################################

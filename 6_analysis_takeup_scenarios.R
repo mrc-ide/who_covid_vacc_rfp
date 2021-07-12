@@ -15,8 +15,6 @@ dat <- readRDS("output/6_takeup_scenarios.rds") %>%
   left_join(age_group_key) %>%
   mutate(`Age.target` = factor(`Age.target`, levels = rev(a)))
 
-dat$Scenario
-
 # figure 6: bar plots
 dat6 <- dat %>%
   filter(max_coverage != 0,
@@ -48,13 +46,14 @@ g6_plotfunc <- function(data, event){
   facet_grid(`Income group` ~ Scenario) +
   labs(x = "Age coverage target (years)", y = paste0(event, " averted per million total population"), fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+  scale_fill_manual(values = c(col1, col2, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
         axis.line = element_line())
 }
 g6_deaths <- g6_plotfunc(dat6_permill, "Deaths")
+g6_deaths
 ggsave("plots/fig6_deaths.png", plot = g6_deaths, height = 8, width = 10)
 
 g6_hospitalisations <- g6_plotfunc(dat6_permill, "Hospitalisations")
@@ -63,16 +62,3 @@ ggsave("plots/fig6_hospitalisations.png", plot = g6_hospitalisations, height = 8
 g6_infections <- g6_plotfunc(dat6_permill, "Infections")
 ggsave("plots/fig6_infections.png", plot = g6_infections, height = 8, width = 10)
 
-# g6_FVP <- ggplot(data = filter(dat6_perFVP, Event == "Deaths"), aes(x = `Age.target`, y = (value / vaccine_n_phase1 * 100), alpha = Period, fill = `Age.target`)) +
-#   geom_bar(stat = "identity") +
-#   geom_text(aes(label=(round(value / vaccine_n_phase1 * 100,3))), stat = "identity", position = position_stack(vjust = 0.5)) +
-#   facet_grid(`Income group` ~ Scenario) +
-#   labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
-#   scale_alpha_discrete("Period", range = c(0.25, 1)) +
-#   scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
-#   theme_bw() +
-#   theme(strip.background = element_rect(fill = NA, color = "white"),
-#         panel.border = element_blank(),
-#         axis.line = element_line())
-# 
-# g6_FVP

@@ -72,7 +72,7 @@ g5 <- ggplot() +
   scale_linetype_manual(values = c("dashed", "solid")) +
   geom_vline(xintercept = 122+365, linetype = "dotted") +
   geom_vline(xintercept = 122+365*2, linetype = "dotted") +
-  scale_color_manual(values = c(col1, col2, col2b, col3, col4)) +
+  scale_color_manual(values = c(col1, col2, col3, col4)) +
   facet_wrap( ~ Scenario, labeller = label_both) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
@@ -106,8 +106,25 @@ dat5b <- dat %>%
 
 g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
+  geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
   facet_wrap(~ Scenario, labeller = label_both) +
   labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)") +
+  scale_alpha_discrete("Period", range = c(0.25, 1)) +
+  scale_fill_manual(values = c(col1, col2, col3, col4)) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = NA, color = "white"),
+        panel.border = element_blank(),
+        axis.line = element_line())
+
+g5b
+ggsave("plots/fig5b_text.png", plot = g5b, height = 6, width = 7)
+
+# FVP barplot
+g5b_FVP <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = value / vaccine_n_phase1 * 100, alpha = Period, fill = `Age.target`)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
+  facet_wrap(~ Scenario, labeller = label_both) +
+  labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
   scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   theme_bw() +
@@ -115,8 +132,8 @@ g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), a
         panel.border = element_blank(),
         axis.line = element_line())
 
-g5b
-ggsave("plots/fig5b.png", plot = g5b, height = 6, width = 7)
+g5b_FVP
+ggsave("plots/fig5b_FVP_text.png", plot = g5b_FVP, height = 6, width = 7)
 
 ##################################
 # results across all income settings
@@ -129,11 +146,12 @@ plot_func_sensitivity <- function(x){
   
   g5c <- ggplot(data = df , aes(x = Age.target, y = (value / target_pop * 1e6), alpha = Period, fill = Age.target)) +
     geom_bar(stat = "identity") +
+    geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
     facet_wrap(Event ~ Scenario, nrow = 3, labeller = label_both, scales = "free") +
     labs(x = "Age coverage target (years)", y = "Events averted per million total population", fill = "Age coverage \ntarget (years)") +
     scale_alpha_discrete("Period", range = c(0.25, 1)) +
     geom_blank(aes(y = yax_max / target_pop * 1e6)) +
-    scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+    scale_fill_manual(values = c(col1, col2, col3, col4)) +
     theme_bw() +
     theme(strip.background = element_rect(fill = NA, color = "white"),
           panel.border = element_blank(),
@@ -149,14 +167,14 @@ for (i in 1:4){
   
   g5c_disease_blocking <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Disease_Blocking_Only"), income_group == icg))
   
-  ggsave(paste0("plots/fig5c_disease_blocking_", icg, ".png"), plot = g5c_disease_blocking, height = 7, width = 8)
+  ggsave(paste0("plots/fig5c_disease_blocking_", icg, "_text.png"), plot = g5c_disease_blocking, height = 8, width = 8)
   
   g5c_hs_unconst <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "HS_Unconstrained"), income_group == icg))
   
-  ggsave(paste0("plots/fig5c_hs_unconstrained_", icg, ".png"), plot = g5c_hs_unconst, height = 7, width = 8)
+  ggsave(paste0("plots/fig5c_hs_unconstrained_", icg, "_text.png"), plot = g5c_hs_unconst, height = 8, width = 8)
   
   g5c_Reduced_Inf_U10 <- plot_func_sensitivity(filter(dat5b, Scenario %in% c("Default", "Reduced_Inf_U10"), income_group == icg))
   
-  ggsave(paste0("plots/fig5c_Reduced_Inf_U10_", icg, ".png"), plot = g5c_Reduced_Inf_U10, height = 7, width = 8)
+  ggsave(paste0("plots/fig5c_Reduced_Inf_U10_", icg, "_text.png"), plot = g5c_Reduced_Inf_U10, height = 8, width = 8)
 }
 

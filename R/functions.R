@@ -51,7 +51,7 @@ get_prob_non_severe_death_treatment <- function(income_group, hs_constraints){
 }
 
 ###############################################################################
-# run vaccine model using country fit
+# run vaccine model
 run_vaccine_income_setting <- function(
   R0 = 2.5,
   Rt1 = 1.2,
@@ -79,6 +79,10 @@ run_vaccine_income_setting <- function(
   rel_infectiousness_vaccinated = 0.55,
   takeup_over_65 = 0.85,
   takeup_under_65 = 0.7,
+  takeup_under5_HIC = 0.87,
+  takeup_under5_UMIC = 0.81,
+  takeup_under5_LMIC = 0.77,
+  takeup_under5_LIC = 0.7,
   use_DDE = TRUE,
   atol = 0.001,
   rtol = 0.001,
@@ -123,6 +127,13 @@ run_vaccine_income_setting <- function(
   ind <- 17 - target_group_stop + 1
   vacc_vect <- c(rep(0, 17 - ind), rep(1, ind)) * max_coverage # vector of which groups to target
   mc <- c(rep(takeup_under_65, 13), rep(takeup_over_65, 4)) # hard-code in WHO takeup
+  if (income_group == "HIC") {mc[1] <- takeup_under5_HIC}
+  if (income_group == "UMIC") {mc[1] <- takeup_under5_UMIC}
+  if (income_group == "LMIC") {mc[1] <- takeup_under5_LMIC}
+  if (income_group == "LIC") {mc[1] <- takeup_under5_LIC}
+  
+  # adjust takeup in 10-15-year-old group (i.e. group 3) to represent 12-15 instead.
+  mc[3] <- 3/5*mc[3]
   
   target_pop_vacc <- sum(pop * vacc_vect * mc)
   vacc_per_day <- round(target_pop_vacc / vacc_period)
@@ -207,76 +218,40 @@ run_vaccine_income_setting <- function(
   )
 
   # Create output: 1) wrt time, 2) summaries by age 3) by age and time
-  o1 <- nimue::format(r1) %>%
-    mutate(t = t + as.numeric(as.Date(date_start)) - as.numeric(as.Date("2020-01-01")) + 1)
+  o1 <- nimue::format(r1)
 
   x <- nimue::format(r1,
                      compartments = NULL,
                      summaries = c("deaths", "infections", "vaccines", "hospitalisations"),
-                     reduce_age = FALSE) %>%
-    mutate(t = t + as.numeric(as.Date(date_start)) - as.numeric(as.Date("2020-01-01")) + 1)
+                     reduce_age = FALSE)
 
-  j <- as.numeric(as.Date(vaccine_start_date)) - as.numeric(as.Date("2020-01-01"))
-  k <- as.numeric(as.Date("2022-06-30")) - as.numeric(as.Date("2020-01-01")) + 1
-  l <- as.numeric(as.Date("2023-06-30")) - as.numeric(as.Date("2020-01-01")) + 1
+  j <- as.numeric(as.Date(vaccine_start_date)) - as.numeric(as.Date(date_start))
+  k <- as.numeric(as.Date("2022-06-30")) - as.numeric(as.Date(date_start)) + 1
+  l <- as.numeric(as.Date("2023-06-30")) - as.numeric(as.Date(date_start)) + 1
 
   value_phase1 <- summarise_by_age(x, j, k, "phase1")
-  value_phase2 <- summarise_by_age(x, k, l, "phase2")
+  value_phase2 <- summarise_by_age(x, (k+1), l, "phase2")
 
   o2 <- rbind(value_phase1, value_phase2)
 
-  # also store R0
-  # temp <- data.frame(R0, tt_R0)
-  # 
-  # q <- as.numeric(as.Date("2022-12-31")) - as.numeric(as.Date(date_start)) + 1
-  # # o3 <- data.frame(tt_R0 = 1:q) %>%
-  # #   left_join(temp, by = "tt_R0") %>%
-  #   fill(R0)
-  # 
-  # o3$date_R0 <- as.Date(as.numeric(date_start) + o3$tt_R0 - 1, origin = "1970-01-01")
-
-  #o4 <- nimue::format(r1, compartments = c(), summaries = c("deaths"), reduce_age = FALSE)
-
-  #tibble(output = list(o1), output_age = list(o2), R0 = list(o3), output_age_time = list(o4))
-  tibble(output = list(o1), output_age = list(o2))
+  nms <- colnames(r1$output)
+  deaths_vacc_pos <- grep("^deaths_cumu.*4\\]|^deaths_cumu.*5\\]", nms)
+  deaths <- r1$output[,c(1,deaths_vacc_pos),]
+  o3 <- deaths
+  
+  tibble(output = list(o1), output_age = list(o2), output_new = list(o3))
 }
 
 ###############################################################################
 
-# Format output
 format_out <- function(out, scenarios){
   # Combine_inputs and outputs
   out1 <- bind_cols(scenarios, bind_rows(out))
   # Isolate counterfactual (Coverage == 0)
   outcf <- filter(out1, max_coverage == 0) %>%
     rename(output_cf = output,
-           output_age_cf = output_age) %>%
-    select(-c(max_coverage, vaccine_start_date, rel_dose_supply, dose_gap, vaccine_delivery_period, efficacy_1d, efficacy_2d, strategy)) %>%
-    unique()
-  
-  # Combine runs and counterfactual and estimate summaries
-  summaries <- left_join(out1, outcf)
-  
-  m <- ncol(summaries)+1
-  n <- ncol(summaries)+14
-  
-  summaries_phase1 <- summarise_outputs_age(summaries, p = "phase1")
-  colnames(summaries_phase1)[m:n] <- paste0(colnames(summaries_phase1)[m:n], "_phase1")
-  
-  summaries_phase2 <- summarise_outputs_age(summaries, p = "phase2")
-  colnames(summaries_phase2)[m:n] <- paste0(colnames(summaries_phase2)[m:n], "_phase2")
-  
-  summaries <- left_join(summaries, select(summaries_phase1, -contains("output"))) %>%
-    left_join(select(summaries_phase2, -contains("output")))
-}
-
-format_out_all <- function(out, scenarios){
-  # Combine_inputs and outputs
-  out1 <- bind_cols(scenarios, bind_rows(out))
-  # Isolate counterfactual (Coverage == 0)
-  outcf <- filter(out1, max_coverage == 0) %>%
-    rename(output_cf = output,
-           output_age_cf = output_age) %>%
+           output_age_cf = output_age,
+           output_new_cf = output_new) %>%
     select(-max_coverage) %>%
     unique()
   
@@ -344,12 +319,6 @@ summarise_yll <- function(x, lifespan = 86.6, time_period){
 get_pv <- function(x){
   pivot_wider(x, id_cols = c(t, replicate, age_group), values_from = value, names_from = compartment) %>%
     mutate(prop_vaccinated = 1 - unvaccinated / N)
-}
-
-get_start_date <- function(iso3c){
-  json_path <- file.path("https://raw.githubusercontent.com/mrc-ide/global-lmic-reports/master/",iso3c,"input_params.json")
-  json <- jsonlite::read_json(json_path)
-  date_start <- as.Date(json[[1]]$date)
 }
 
 prop_older_than <- function(pop, age_index){

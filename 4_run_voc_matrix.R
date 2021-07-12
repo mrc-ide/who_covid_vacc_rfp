@@ -40,7 +40,7 @@ strategy_switch <- FALSE
 vacc_children <- TRUE
 
 # Target group vaccinated before stopping (implemented instead of reaching a target % coverage)
-target_group_stop <- c(11, 7, 5, 3, 1)
+target_group_stop <- c(11, 5, 3, 1)
 
 # Efficacy
 efficacy_infection <- c(0.63, 0.4)
@@ -81,7 +81,7 @@ plan(multiprocess, workers = 6)
 system.time({out <- future_pmap(scenarios, run_vaccine_income_setting, .progress = TRUE, .options = furrr_options(seed = NULL))})
 
 #### Format output #############################################################
-out_format <- format_out_all(out, scenarios)
+out_format <- format_out(out, scenarios)
 ################################################################################
 
 ### Save output ################################################################

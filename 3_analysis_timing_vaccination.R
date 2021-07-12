@@ -40,7 +40,7 @@ g3a <- ggplot() +
   scale_y_continuous("Deaths averted per million total population", 
     sec.axis = sec_axis(~ . / scalefact, name = "Deaths per million per day (counterfactual)")) +
   facet_wrap( ~`Age.target`, ncol = 1) +
-scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+scale_fill_manual(values = c(col1, col2, col3, col4)) +
   scale_x_continuous(labels = seq(0,486,100), breaks = seq(18687,(18687+487-1),100)) +
   labs(x = "Time (days)", fill = "Age coverage \ntarget (years)") +
   theme_bw() +
@@ -50,9 +50,9 @@ scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
   
 g3a
 
-ggsave("plots/fig3a_timing_VEdis90.png", plot = g3a, height = 10, width = 6)
+ggsave("plots/fig3a_timing.png", plot = g3a, height = 10, width = 6)
 
-g3b <- ggplot(data = filter(pd3b, t >= 600), aes(x = t, y = value / target_pop * 1e6, col = factor(vaccine_start_date))) +
+g3b <- ggplot(data = filter(pd3b, t >= 500), aes(x = t, y = value / target_pop * 1e6, col = factor(vaccine_start_date))) +
   geom_line() +
   facet_wrap(~duration_R) +
   theme_bw() +

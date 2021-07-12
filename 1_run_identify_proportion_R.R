@@ -24,7 +24,7 @@ Rt1_start <- "2020-05-01"
 Rt2_start <- "2021-07-01"
 Rt2_end <- "2021-12-31"
 R0 <- 2.5
-Rt1 <- c(1.05, 1.2, 1.4)
+Rt1 <- c(1.05, 1.2, 1.25, 1.3, 1.4)
 Rt2 <- 3.5 #c(2.5, 3.5, 4.5)
 
 # vaccine
@@ -54,7 +54,7 @@ plan(multiprocess, workers = 6)
 system.time({out <- future_pmap(scenarios, run_vaccine_income_setting, .progress = TRUE, .options = furrr_options(seed = NULL))})
 
 #### Format output #############################################################
-out_format <- format_out_all(out, scenarios)
+out_format <- format_out(out, scenarios)
 ################################################################################
 
 ### Save output ################################################################
