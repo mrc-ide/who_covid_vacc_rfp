@@ -25,12 +25,14 @@ pd3a <- dat %>%
   select(R0, Rt1, Rt2, max_coverage, `Income group`, date_start, target_pop, vaccine_start_date, target_group_stop, duration_R, deaths_averted_phase1) %>%
   filter(max_coverage != 0) %>%
   left_join(age_group_key) %>%
-  mutate(`Age.target` = factor(`Age.target`, levels = rev(a)))
+  mutate(`Age.target` = factor(`Age.target`, levels = rev(a))) %>%
+  mutate(vaccine_start_date = as.Date(vaccine_start_date) - (8 * 7))
+  
 
 pd3b <- pd3 %>%
   filter(max_coverage != 0) %>%
   filter(date <= "2022-06-30",
-        target_group_stop == 7)
+        target_group_stop == 3)
 
 scalefact <- 2000
 g3a <- ggplot() +

@@ -41,8 +41,9 @@ ggsave("plots/fig4_deaths.png", plot = g4, height = 6, width = 14)
 #######################################################################
 
 g4_plot_func <- function(data, icg){
-  ggplot(data = filter(data, income_group == icg), aes(x = `Age.target`, y = (value / 50e6 * 1e6), fill = `Age.target`, alpha = name)) +
+  ggplot(data = filter(data, income_group == icg, max_coverage != 0), aes(x = `Age.target`, y = (value / 50e6 * 1e6), fill = `Age.target`, alpha = name)) +
     geom_bar(stat = "identity") +
+    geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5), size = 2.5) +
     facet_grid(`Transmission` ~ `VE infection` ) +
     labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)", title = paste0("Income setting: ", icg)) +
     scale_fill_manual(values = c(col1, col2, col3, col4)) +
@@ -54,13 +55,13 @@ g4_plot_func <- function(data, icg){
 }
 
 g4_HIC <- g4_plot_func(dat4a, "HIC")
-ggsave("plots/fig4_HIC.png", plot = g4_HIC, height = 6, width = 7)
+ggsave("plots/fig4_HIC_text.png", plot = g4_HIC, height = 6, width = 7)
 g4_UMIC <- g4_plot_func(dat4a, "UMIC")
-ggsave("plots/fig4_UMIC.png", plot = g4_UMIC, height = 6, width = 7)
+ggsave("plots/fig4_UMIC_text.png", plot = g4_UMIC, height = 6, width = 7)
 g4_LMIC <- g4_plot_func(dat4a, "LMIC")
-ggsave("plots/fig4_LMIC.png", plot = g4_LMIC, height = 6, width = 7)
+ggsave("plots/fig4_LMIC_text.png", plot = g4_LMIC, height = 6, width = 7)
 g4_LIC <- g4_plot_func(dat4a, "LIC")
-ggsave("plots/fig4_LIC.png", plot = g4_LIC, height = 6, width = 7)
+ggsave("plots/fig4_LIC_text.png", plot = g4_LIC, height = 6, width = 7)
 
 
 #######################################################################

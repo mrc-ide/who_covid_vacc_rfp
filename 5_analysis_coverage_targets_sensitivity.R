@@ -106,7 +106,7 @@ dat5b <- dat %>%
 
 g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = (value / 50e6 * 1e6), alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
+  #geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
   facet_wrap(~ Scenario, labeller = label_both) +
   labs(x = "Age coverage target (years)", y = "Deaths averted per million total population", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
@@ -117,23 +117,23 @@ g5b <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), a
         axis.line = element_line())
 
 g5b
-ggsave("plots/fig5b_text.png", plot = g5b, height = 6, width = 7)
+ggsave("plots/fig5b.png", plot = g5b, height = 6, width = 7)
 
 # FVP barplot
 g5b_FVP <- ggplot(data = filter(dat5b, Event == "Deaths", income_group == "LMIC"), aes(x = `Age.target`, y = value / vaccine_n_phase1 * 100, alpha = Period, fill = `Age.target`)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
+  #geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5)) +
   facet_wrap(~ Scenario, labeller = label_both) +
   labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)") +
   scale_alpha_discrete("Period", range = c(0.25, 1)) +
-  scale_fill_manual(values = c(col1, col2, col2b, col3, col4)) +
+  scale_fill_manual(values = c(col1, col2, col3, col4)) +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "white"),
         panel.border = element_blank(),
         axis.line = element_line())
 
 g5b_FVP
-ggsave("plots/fig5b_FVP_text.png", plot = g5b_FVP, height = 6, width = 7)
+ggsave("plots/fig5b_FVP.png", plot = g5b_FVP, height = 6, width = 7)
 
 ##################################
 # results across all income settings

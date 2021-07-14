@@ -46,6 +46,7 @@ for (i in 1:4){
   icg <- income_group[i]
   g4_icg <- ggplot(data = filter(dat4a, income_group == icg, max_coverage == 1), aes(x = `Age.target`, y = value / vaccine_n_phase1 * 100, fill = `Age.target`, alpha = name)) +
     geom_bar(stat = "identity") +
+    geom_text(aes(label=(round(value / 50e6 * 1e6))), stat = "identity", position = position_stack(vjust = 0.5), size = 2.5) +
     facet_grid(`Transmission` ~ `VE infection`) +
     labs(x = "Age coverage target (years)", y = "Deaths averted per 100 FVP", fill = "Age coverage \ntarget (years)", title = paste0("Income setting: ", icg)) +
     scale_fill_manual(values = c(col1, col2, col3, col4)) +
@@ -54,7 +55,7 @@ for (i in 1:4){
     theme(strip.background = element_rect(fill = NA, color = "white"),
           panel.border = element_blank(),
           axis.line = element_line())
-  ggsave(paste0("plots/fig4_", icg, "_FVP.png"), plot = g4_icg, height = 6, width = 7)
+  ggsave(paste0("plots/fig4_", icg, "_FVP_text.png"), plot = g4_icg, height = 6, width = 7)
 }
 
 #######################################################################
